@@ -1,0 +1,74 @@
+// Author: y-johnson (https://github.com/y-johnson)
+// Based off the following C code
+//
+// void insertionSort(int arr[], int n){
+//     int i, key, j;
+//     for (i = 1; i < n; i++) {
+//         key = arr[i];
+//         j = i - 1;
+//  
+//         while (j >= 0 && arr[j] > key) {
+//             arr[j + 1] = arr[j];
+//             j = j - 1;
+//         }
+//         arr[j + 1] = key;
+//     }
+// }
+
+main:
+    ADD X0, XZR, XZR          // Array starting address
+    ADDI X1, XZR, #9          // Length
+    BL fill
+    BL insertion_sort
+    B debug
+
+// X0 = Address
+// X1 = Length
+fill:
+	ADD X10, XZR, X1            // Index starting at max value
+    ADD X11, X0, XZR           // (ADDRESS) temporary array iterator
+	mid:
+	SUB X12, XZR, X10
+    CBZ X12, fill_end
+    STUR X10, [X11, #0]
+    SUBI X10, X10, #1
+    ADDI X11, X11, #8
+	B mid
+	fill_end:
+	BR LR
+
+insertion_sort:
+// X1 = key
+// X16 = idx (outer loop)
+// X17 = j_idx (inner loop)
+DUMP
+    ADDI X16, XZR, #1 // idx = 1
+    outer:
+        SUBS XZR, X16, X1                // idx and n
+        B.GE debug                      // if idx >= n
+        LSL X9, X16, #3                 // temp9 = idx * 8
+        ADD X18, X0, X9                 // Key address
+        LDUR X18, [X18, #0]
+        SUBI X17, X16, #1               // j = idx - 1
+
+        inner:
+            SUBS XZR, X17, XZR            // compare X17 with 0
+            B.LT exit_inner
+            
+            LSL X10, X17, #3        // temp10 = j*8 (to get it as an address offset)
+            ADD X11, X0, X10        // temp11 = (address of) arr[j]
+            LDUR X12, [X11, #0]     // temp12 = (value of) arr[j]
+            LDUR X13, [X11, #8]     // temp13 = (value of) arr[j + 1] (#8 refers to the address offset)
+            SUBS XZR, X12, X18            // Compare the values of arr[j] and arr[j + 1]
+            B.LT exit_inner              // Branch outta here if less than or equal
+            STUR X12, [X11, #8]     // Store value of arr[j] into arr[j + 1]
+            SUBI X17, X17, #1       // --j
+            B inner
+        exit_inner:
+        ADDI X16, X16, #1 // ++idx
+        STUR X18, [X11, #0]
+        B outer
+
+debug:
+DUMP
+done:
